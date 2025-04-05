@@ -17,7 +17,7 @@ pub fn main() void {
     std.debug.print("{any}\n", .{tree});
 }
 
-test "(+ 1 1)" {
+test "parser" {
     var lex = lexer.lex("(+ 1 1)", std.testing.allocator);
     defer lex.deinit();
     const result = parser.parse(lex.tokens.items);
@@ -36,9 +36,10 @@ test "(+ 1 1)" {
         },
     };
     try std.testing.expectEqual(expected.op.kind, result.op.kind);
+    std.debug.print("{any}", .{result.lhs});
 }
 
-test "lex ()+-*/42" {
+test "lexer" {
     var l = lexer.lex("()+-*/42", std.testing.allocator);
     var tokenKinds = std.ArrayList(T).init(std.testing.allocator);
     defer l.deinit();
