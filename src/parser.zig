@@ -7,49 +7,81 @@ const Token = token.Token;
 
 pub const BinOp = struct {
     op: Token,
-    lhs: *const Expression,
-    rhs: *const Expression,
+    lhs: *Expression,
+    rhs: *Expression,
+    allocator: std.mem.Allocator,
+    pub fn deinit(self: *BinOp) void {
+        self.lhs.deinit();
+        self.rhs.deinit();
+        self.allocator.destroy(self.lhs);
+        self.allocator.destroy(self.rhs);
+        self.allocator.destroy(self);
+    }
 };
-pub const Expression = union(enum) {
-    binop: BinOp,
+pub const ExprType = enum {
+    binop,
+    literal,
+};
+pub const Expression = union(ExprType) {
+    binop: *BinOp,
     literal: u64,
+    pub fn deinit(self: Expression) void {
+        switch (self) {
+            .binop => |*bop| {
+                bop.*.deinit();
+            },
+            .literal => {},
+        }
+    }
 };
 const Parser = struct {
     tokens: []Token,
     current: usize,
-    fn new(tokens: []Token) Parser {
+    allocator: std.mem.Allocator,
+    fn new(tokens: []Token, allocator: std.mem.Allocator) Parser {
         return Parser{
             .tokens = tokens,
             .current = 0,
+            .allocator = allocator,
         };
     }
-    fn parse(self: *Parser) BinOp {
+    fn parse(self: *Parser) *BinOp {
         return self.binop();
     }
-    fn binop(self: *Parser) BinOp {
+    fn binop(self: *Parser) *BinOp {
+        const bop = self.allocator.create(BinOp) catch unreachable;
+        errdefer self.allocator.destroy(bop);
         _ = self.chomp(T.LPAREN);
         const op = self.operator();
         const lhs = self.expression();
         const rhs = self.expression();
         _ = self.chomp(T.RPAREN);
-        return BinOp{
+        bop.* = BinOp{
             .op = op,
             .lhs = lhs,
             .rhs = rhs,
+            .allocator = self.allocator,
         };
+        return bop;
     }
-    fn expression(self: *Parser) *const Expression {
+    fn expression(self: *Parser) *Expression {
+        const expr = self.allocator.create(Expression) catch unreachable;
+        errdefer self.allocator.destroy(expr);
         if (self.matchToken(T.INT)) {
             const prev = self.previous();
             const literal = switch (prev.kind) {
                 T.INT => prev.literal.?,
                 else => std.debug.panic("expression failed", .{}),
             };
-            return &Expression{ .literal = literal };
+            expr.* = Expression{
+                .literal = literal,
+            };
+        } else {
+            expr.* = Expression{
+                .binop = self.binop(),
+            };
         }
-        return &Expression{
-            .binop = self.binop(),
-        };
+        return expr;
     }
     fn operator(self: *Parser) Token {
         if (self.matchToken(T.PLUS)) {
@@ -99,7 +131,7 @@ const Parser = struct {
     }
 };
 
-pub fn parse(tokens: []Token) BinOp {
-    var parser = Parser.new(tokens);
+pub fn parse(tokens: []Token, allocator: std.mem.Allocator) *BinOp {
+    var parser = Parser.new(tokens, allocator);
     return parser.parse();
 }

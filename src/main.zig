@@ -13,30 +13,21 @@ pub fn main() void {
     const source = std.mem.span(raw_source);
     var lex = lexer.lex(source, allocator);
     defer lex.deinit();
-    const tree = parser.parse(lex.tokens.items);
+    const tree = parser.parse(lex.tokens.items, allocator);
+    defer tree.deinit();
     std.debug.print("{any}\n", .{tree});
 }
 
 test "parser" {
-    var lex = lexer.lex("(+ 1 1)", std.testing.allocator);
+    var lex = lexer.lex("(+ (* 2 2) 1)", std.testing.allocator);
     defer lex.deinit();
-    const result = parser.parse(lex.tokens.items);
-    const expected = parser.BinOp{
-        .op = token.Token{
-            .kind = T.PLUS,
-            .lexeme = "+",
-            .literal = null,
-            .line = 1,
-        },
-        .lhs = &parser.Expression{
-            .literal = 1,
-        },
-        .rhs = &parser.Expression{
-            .literal = 1,
-        },
-    };
-    try std.testing.expectEqual(expected.op.kind, result.op.kind);
-    std.debug.print("{any}", .{result.lhs});
+    const result = parser.parse(lex.tokens.items, std.testing.allocator);
+    defer result.deinit();
+    try std.testing.expectEqual(T.PLUS, result.op.kind);
+    try std.testing.expectEqual(T.STAR, result.lhs.binop.op.kind);
+    try std.testing.expectEqual(2, result.lhs.binop.lhs.literal);
+    try std.testing.expectEqual(2, result.lhs.binop.rhs.literal);
+    try std.testing.expectEqual(1, result.rhs.literal);
 }
 
 test "lexer" {
