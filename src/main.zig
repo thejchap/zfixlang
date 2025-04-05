@@ -1,9 +1,8 @@
 const std = @import("std");
 
 const lexer = @import("lexer.zig");
+const T = lexer.TokenKind;
 const parser = @import("parser.zig");
-const token = @import("token.zig");
-const T = token.TokenKind;
 
 pub fn main() void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
@@ -18,19 +17,7 @@ pub fn main() void {
     std.debug.print("{any}\n", .{tree});
 }
 
-test "parser" {
-    var lex = lexer.lex("(+ (* 2 2) 1)", std.testing.allocator);
-    defer lex.deinit();
-    const result = parser.parse(lex.tokens.items, std.testing.allocator);
-    defer result.deinit();
-    try std.testing.expectEqual(T.PLUS, result.op.kind);
-    try std.testing.expectEqual(T.STAR, result.lhs.binop.op.kind);
-    try std.testing.expectEqual(2, result.lhs.binop.lhs.literal);
-    try std.testing.expectEqual(2, result.lhs.binop.rhs.literal);
-    try std.testing.expectEqual(1, result.rhs.literal);
-}
-
-test "lexer" {
+test "lex" {
     var l = lexer.lex("()+-*/42", std.testing.allocator);
     var tokenKinds = std.ArrayList(T).init(std.testing.allocator);
     defer l.deinit();
@@ -49,4 +36,16 @@ test "lexer" {
         T.EOF,
     }, tokenKinds.items);
     try std.testing.expectEqual(42, l.tokens.items[6].literal);
+}
+
+test "parse" {
+    var lex = lexer.lex("(+ (* 2 2) 1)", std.testing.allocator);
+    defer lex.deinit();
+    const result = parser.parse(lex.tokens.items, std.testing.allocator);
+    defer result.deinit();
+    try std.testing.expectEqual(T.PLUS, result.op.kind);
+    try std.testing.expectEqual(T.STAR, result.lhs.binop.op.kind);
+    try std.testing.expectEqual(2, result.lhs.binop.lhs.literal);
+    try std.testing.expectEqual(2, result.lhs.binop.rhs.literal);
+    try std.testing.expectEqual(1, result.rhs.literal);
 }

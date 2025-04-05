@@ -1,9 +1,8 @@
 const std = @import("std");
 
 const lexer = @import("lexer.zig");
-const token = @import("token.zig");
-const T = token.TokenKind;
-const Token = token.Token;
+const T = lexer.TokenKind;
+const Token = lexer.Token;
 
 pub const BinOp = struct {
     op: Token,

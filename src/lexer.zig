@@ -1,8 +1,22 @@
 const std = @import("std");
 
-const token = @import("token.zig");
-const T = token.TokenKind;
-const Token = token.Token;
+pub const TokenKind = enum {
+    LPAREN,
+    RPAREN,
+    PLUS,
+    MINUS,
+    STAR,
+    SLASH,
+    INT,
+    EOF,
+};
+const T = TokenKind;
+pub const Token = struct {
+    kind: TokenKind,
+    lexeme: []const u8,
+    literal: ?u64,
+    line: usize,
+};
 
 const Lexer = struct {
     source: []const u8,
