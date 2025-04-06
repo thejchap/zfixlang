@@ -158,3 +158,17 @@ pub const Parser = struct {
         root.deinit(self.allocator);
     }
 };
+test "parser" {
+    const Lexer = @import("lexer.zig").Lexer;
+    var lex = Lexer.new("(+ (* 2 2) 1)", std.testing.allocator);
+    defer lex.deinit();
+    lex.scanTokens();
+    var parsr = Parser.new(lex.tokens.items, std.testing.allocator);
+    const root = parsr.parse();
+    defer parsr.deinit(root);
+    try std.testing.expectEqual(Operator.Add, root.BinOp.op);
+    try std.testing.expectEqual(Operator.Mul, root.BinOp.left.BinOp.op);
+    try std.testing.expectEqual(2, root.BinOp.left.BinOp.left.Number);
+    try std.testing.expectEqual(2, root.BinOp.left.BinOp.right.Number);
+    try std.testing.expectEqual(1, root.BinOp.right.Number);
+}

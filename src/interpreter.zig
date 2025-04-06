@@ -30,3 +30,17 @@ pub const Interpreter = struct {
         }
     }
 };
+test "interpreter" {
+    const Lexer = @import("lexer.zig").Lexer;
+    const Parser = @import("parser.zig").Parser;
+    const source = "(+ (* 2 2) 1)";
+    var lex = Lexer.new(source, std.testing.allocator);
+    defer lex.deinit();
+    lex.scanTokens();
+    var parsr = Parser.new(lex.tokens.items, std.testing.allocator);
+    const root = parsr.parse();
+    defer parsr.deinit(root);
+    var interp = Interpreter.new(root);
+    const result = interp.interpret();
+    try std.testing.expectEqual(5, result);
+}

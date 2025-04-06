@@ -109,3 +109,24 @@ pub const Lexer = struct {
         self.tokens.deinit();
     }
 };
+test "lexer" {
+    var l = Lexer.new("()+-*/42", std.testing.allocator);
+    defer l.deinit();
+    l.scanTokens();
+    var tokenKinds = std.ArrayList(T).init(std.testing.allocator);
+    defer tokenKinds.deinit();
+    for (l.tokens.items) |tok| {
+        try tokenKinds.append(tok.kind);
+    }
+    try std.testing.expectEqualSlices(T, &[_]T{
+        T.LPAREN,
+        T.RPAREN,
+        T.PLUS,
+        T.MINUS,
+        T.STAR,
+        T.SLASH,
+        T.INT,
+        T.EOF,
+    }, tokenKinds.items);
+    try std.testing.expectEqual(42, l.tokens.items[6].literal);
+}
