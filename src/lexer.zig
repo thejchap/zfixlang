@@ -18,19 +18,27 @@ pub const Token = struct {
     line: usize,
 };
 
-const Lexer = struct {
+/// simple lexer with a few token types
+pub const Lexer = struct {
+    /// source code to scan
     source: []const u8,
+    /// tokens generated from the source code
     tokens: std.ArrayList(Token),
+    ///
     start: usize,
+    /// current position in the source code
     current: usize,
+    /// current line number
     line: usize,
-    fn scanTokens(self: *Lexer) void {
+    /// goes through til EOF and emits tokens
+    pub fn scanTokens(self: *Lexer) void {
         while (!self.isAtEnd()) {
             self.start = self.current;
             self.scanToken();
         }
         self.addToken(T.EOF);
     }
+    /// emit a single token
     fn scanToken(self: *Lexer) void {
         const c = self.advance();
         switch (c) {
@@ -53,24 +61,26 @@ const Lexer = struct {
             '\n' => {
                 self.line += 1;
             },
-            else => {
-                std.debug.print("unexpected character: {}\n", .{c});
-            },
+            else => unreachable,
         }
     }
+    /// advance the cursor and return the character at the new position
     fn advance(self: *Lexer) u8 {
         self.current += 1;
         return self.source[self.current - 1];
     }
+    /// peek at the next character without advancing the cursor
     fn peek(self: *Lexer) u8 {
         if (self.current >= self.source.len) {
             return 0;
         }
         return self.source[self.current];
     }
+    /// convenience method for adding a token with no literal value
     fn addToken(self: *Lexer, kind: T) void {
         return self.addTokenWithLiteral(kind, null);
     }
+    /// convenience method for adding a token with a literal value
     fn addTokenWithLiteral(self: *Lexer, kind: T, literal: ?u64) void {
         const tok = Token{
             .kind = kind,
@@ -80,10 +90,12 @@ const Lexer = struct {
         };
         self.tokens.append(tok) catch unreachable;
     }
+    /// are we at EOF
     fn isAtEnd(self: *Lexer) bool {
         return self.current >= self.source.len;
     }
-    fn new(source: []const u8, alloc: std.mem.Allocator) Lexer {
+    /// initialize with empty tokens at start
+    pub fn new(source: []const u8, alloc: std.mem.Allocator) Lexer {
         return Lexer{
             .source = source,
             .tokens = std.ArrayList(Token).init(alloc),
@@ -92,12 +104,8 @@ const Lexer = struct {
             .line = 1,
         };
     }
+    /// teardown
     pub fn deinit(self: *Lexer) void {
         self.tokens.deinit();
     }
 };
-pub fn lex(source: []const u8, allocator: std.mem.Allocator) Lexer {
-    var lexer = Lexer.new(source, allocator);
-    lexer.scanTokens();
-    return lexer;
-}
