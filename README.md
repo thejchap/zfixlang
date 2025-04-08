@@ -1,6 +1,6 @@
 # zfixlang
 
-a simple interpreter for prefix expressions in zig to get a feel for the language
+a simple interpreter for prefix expressions in zig to get a feel for the language. implemented with both ast generation as well as just a single pass through the string
 
 syntax:
 
